@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Python HTTP Server | Ilham Prayoga</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #10223a;
+      --panel-dark: #0b1729;
+      --text: #f6fbff;
+      --muted: #a9bbcf;
+      --cyan: #27d7ff;
+      --green: #38f7a7;
+      --line: rgba(255, 255, 255, 0.12);
+      --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(39, 215, 255, 0.18), transparent 30rem),
+        linear-gradient(135deg, #07111f 0%, #0b1729 52%, #06101d 100%);
+      color: var(--text);
+      font-family: "Inter", Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background-image:
+        linear-gradient(rgba(39, 215, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(39, 215, 255, 0.08) 1px, transparent 1px);
+      background-size: 68px 68px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.68), transparent 86%);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 72px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 54px;
+    }
+
+    .brand {
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .back-link,
+    .start-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 800;
+      padding: 10px 16px;
+      transition: transform 0.24s var(--smooth), border-color 0.24s ease, background 0.24s ease;
+    }
+
+    .back-link:hover,
+    .start-button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(39, 215, 255, 0.52);
+      background: rgba(39, 215, 255, 0.1);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(360px, 1.14fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .intro,
+    .simulator,
+    .step-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16, 34, 58, 0.72);
+      box-shadow: 0 22px 58px rgba(0, 0, 0, 0.26);
+      backdrop-filter: blur(14px);
+    }
+
+    .intro {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 520px;
+      padding: 30px;
+    }
+
+    .eyebrow {
+      margin-bottom: 14px;
+      color: var(--cyan);
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 620px;
+      font-size: clamp(2.35rem, 5vw, 4.35rem);
+      font-weight: 900;
+      line-height: 1.08;
+    }
+
+    .intro-text {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .start-button {
+      width: fit-content;
+      margin-top: 32px;
+      border-color: rgba(39, 215, 255, 0.4);
+      background: rgba(39, 215, 255, 0.12);
+      color: var(--cyan);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 16px;
+      transition: transform 0.24s var(--smooth), border-color 0.24s ease, background 0.24s ease;
+    }
+
+    .step-card.active {
+      transform: translateX(6px);
+      border-color: rgba(39, 215, 255, 0.54);
+      background: rgba(39, 215, 255, 0.1);
+    }
+
+    .step-number {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 8px;
+      background: rgba(39, 215, 255, 0.12);
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .step-card h2 {
+      margin-bottom: 2px;
+      font-size: 0.98rem;
+    }
+
+    .step-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .simulator {
+      overflow: hidden;
+      min-height: 520px;
+    }
+
+    .sim-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 18px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--muted);
+    }
+
+    .window-dots span:nth-child(1) {
+      background: #ff6678;
+    }
+
+    .window-dots span:nth-child(2) {
+      background: #ffc857;
+    }
+
+    .window-dots span:nth-child(3) {
+      background: var(--green);
+    }
+
+    .sim-status {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .sim-body {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
+      min-height: 460px;
+    }
+
+    .terminal {
+      border-right: 1px solid var(--line);
+      background: rgba(6, 12, 21, 0.72);
+      padding: 24px;
+    }
+
+    .terminal-title,
+    .browser-title {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .terminal-line {
+      min-height: 1.6em;
+      color: #d9f8ff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .terminal-line.command {
+      color: var(--green);
+    }
+
+    .browser-preview {
+      padding: 24px;
+    }
+
+    .address-bar {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.86rem;
+      padding: 0 14px;
+    }
+
+    .web-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(39, 215, 255, 0.14), rgba(255, 255, 255, 0.04));
+    }
+
+    .web-hero {
+      min-height: 230px;
+      padding: 26px;
+    }
+
+    .web-hero h3 {
+      max-width: 360px;
+      margin-bottom: 14px;
+      font-size: 2rem;
+      line-height: 1.12;
+    }
+
+    .web-hero p {
+      max-width: 420px;
+      color: var(--muted);
+    }
+
+    .web-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      padding: 16px;
+    }
+
+    .web-tile {
+      min-height: 68px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7, 17, 31, 0.42);
+    }
+
+    .hidden {
+      opacity: 0.28;
+      filter: grayscale(1);
+    }
+
+    .fade-in {
+      animation: fadeIn 0.55s var(--smooth) both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 940px) {
+      .hero,
+      .sim-body {
+        grid-template-columns: 1fr;
+      }
+
+      .intro {
+        min-height: auto;
+      }
+
+      .terminal {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 28px, 1120px);
+        padding-top: 24px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 34px;
+      }
+
+      .intro,
+      .terminal,
+      .browser-preview {
+        padding: 22px;
+      }
+
+      .web-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="brand" href="index.html">Ilham Prayoga</a>
+      <a class="back-link" href="index.html#project">Kembali ke Project</a>
+    </header>
+
+    <section class="hero">
+      <div class="intro">
+        <div>
+          <p class="eyebrow">Simulasi Project 02</p>
+          <h1>Simple HTTP Server dengan Python</h1>
+          <p class="intro-text">
+            Simulasi ini menggambarkan cara menjalankan website lokal menggunakan
+            Python HTTP Server, lalu membukanya melalui alamat localhost.
+          </p>
+          <button class="start-button" type="button">Mulai Simulasi</button>
+        </div>
+
+        <div class="step-list" aria-label="Langkah simulasi">
+          <article class="step-card active">
+            <span class="step-number">01</span>
+            <div>
+              <h2>Siapkan folder website</h2>
+              <p>File HTML, CSS, dan JavaScript berada dalam satu folder project.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <span class="step-number">02</span>
+            <div>
+              <h2>Jalankan server lokal</h2>
+              <p>Perintah Python digunakan untuk membuat server sederhana.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <span class="step-number">03</span>
+            <div>
+              <h2>Buka alamat localhost</h2>
+              <p>Browser menampilkan halaman dari server lokal tersebut.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="simulator">
+        <div class="sim-header">
+          <div class="window-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span class="sim-status">LOCAL SERVER DEMO</span>
+        </div>
+
+        <div class="sim-body">
+          <div class="terminal">
+            <p class="terminal-title">Terminal</p>
+            <div class="terminal-line command" data-line="0">$ cd website-sederhana</div>
+            <div class="terminal-line" data-line="1">$ dir</div>
+            <div class="terminal-line" data-line="2">index.html  style.css  script.js</div>
+            <div class="terminal-line command" data-line="3">$ python -m http.server 8000</div>
+            <div class="terminal-line" data-line="4">Serving HTTP on 0.0.0.0 port 8000...</div>
+            <div class="terminal-line" data-line="5">127.0.0.1 - - "GET /index.html HTTP/1.1" 200</div>
+          </div>
+
+          <div class="browser-preview">
+            <p class="browser-title">Browser</p>
+            <div class="address-bar">http://localhost:8000/index.html</div>
+            <div class="web-card hidden">
+              <div class="web-hero">
+                <h3>Website berhasil tampil</h3>
+                <p>
+                  Halaman lokal dapat dibuka karena file project dilayani oleh server Python.
+                </p>
+              </div>
+              <div class="web-grid" aria-hidden="true">
+                <div class="web-tile"></div>
+                <div class="web-tile"></div>
+                <div class="web-tile"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const button = document.querySelector(".start-button");
+    const steps = document.querySelectorAll(".step-card");
+    const lines = document.querySelectorAll(".terminal-line");
+    const preview = document.querySelector(".web-card");
+    let timers = [];
+
+    const resetSimulation = () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers = [];
+      lines.forEach((line) => {
+        line.style.visibility = "hidden";
+        line.classList.remove("fade-in");
+      });
+      steps.forEach((step, index) => step.classList.toggle("active", index === 0));
+      preview.classList.add("hidden");
+      preview.classList.remove("fade-in");
+    };
+
+    const showLine = (index, delay) => {
+      timers.push(setTimeout(() => {
+        const line = lines[index];
+        line.style.visibility = "visible";
+        line.classList.add("fade-in");
+      }, delay));
+    };
+
+    const setStep = (index, delay) => {
+      timers.push(setTimeout(() => {
+        steps.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === index));
+      }, delay));
+    };
+
+    const runSimulation = () => {
+      resetSimulation();
+      showLine(0, 150);
+      showLine(1, 750);
+      showLine(2, 1150);
+      setStep(1, 1700);
+      showLine(3, 1850);
+      showLine(4, 2450);
+      setStep(2, 3100);
+      showLine(5, 3250);
+      timers.push(setTimeout(() => {
+        preview.classList.remove("hidden");
+        preview.classList.add("fade-in");
+      }, 3550));
+    };
+
+    resetSimulation();
+    button.addEventListener("click", runSimulation);
+    window.addEventListener("load", () => {
+      timers.push(setTimeout(runSimulation, 450));
+    });
+  </script>
+</body>
+</html>

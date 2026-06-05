@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Konfigurasi MikroTik | Ilham Prayoga</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #10223a;
+      --text: #f6fbff;
+      --muted: #a9bbcf;
+      --cyan: #27d7ff;
+      --green: #38f7a7;
+      --yellow: #ffc857;
+      --line: rgba(255, 255, 255, 0.12);
+      --smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(39, 215, 255, 0.18), transparent 30rem),
+        linear-gradient(135deg, #07111f 0%, #0b1729 52%, #06101d 100%);
+      color: var(--text);
+      font-family: "Inter", Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background-image:
+        linear-gradient(rgba(39, 215, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(39, 215, 255, 0.08) 1px, transparent 1px);
+      background-size: 68px 68px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.68), transparent 86%);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 72px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 54px;
+    }
+
+    .brand {
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .back-link,
+    .start-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 800;
+      padding: 10px 16px;
+      transition: transform 0.24s var(--smooth), border-color 0.24s ease, background 0.24s ease;
+    }
+
+    .back-link:hover,
+    .start-button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(39, 215, 255, 0.52);
+      background: rgba(39, 215, 255, 0.1);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(380px, 1.18fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .intro,
+    .router-simulator,
+    .step-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16, 34, 58, 0.72);
+      box-shadow: 0 22px 58px rgba(0, 0, 0, 0.26);
+      backdrop-filter: blur(14px);
+    }
+
+    .intro {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 560px;
+      padding: 30px;
+    }
+
+    .eyebrow {
+      margin-bottom: 14px;
+      color: var(--cyan);
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 620px;
+      font-size: clamp(2.35rem, 5vw, 4.35rem);
+      font-weight: 900;
+      line-height: 1.08;
+    }
+
+    .intro-text {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .start-button {
+      width: fit-content;
+      margin-top: 32px;
+      border-color: rgba(39, 215, 255, 0.4);
+      background: rgba(39, 215, 255, 0.12);
+      color: var(--cyan);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 16px;
+      transition: transform 0.24s var(--smooth), border-color 0.24s ease, background 0.24s ease;
+    }
+
+    .step-card.active {
+      transform: translateX(6px);
+      border-color: rgba(39, 215, 255, 0.54);
+      background: rgba(39, 215, 255, 0.1);
+    }
+
+    .step-number {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 8px;
+      background: rgba(39, 215, 255, 0.12);
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .step-card h2 {
+      margin-bottom: 2px;
+      font-size: 0.98rem;
+    }
+
+    .step-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .router-simulator {
+      overflow: hidden;
+      min-height: 560px;
+    }
+
+    .sim-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding: 16px 18px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--muted);
+    }
+
+    .window-dots span:nth-child(1) {
+      background: #ff6678;
+    }
+
+    .window-dots span:nth-child(2) {
+      background: var(--yellow);
+    }
+
+    .window-dots span:nth-child(3) {
+      background: var(--green);
+    }
+
+    .sim-status {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .sim-body {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
+      min-height: 500px;
+    }
+
+    .terminal {
+      border-right: 1px solid var(--line);
+      background: rgba(6, 12, 21, 0.72);
+      padding: 24px;
+    }
+
+    .terminal-title,
+    .topology-title {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .terminal-line {
+      min-height: 1.6em;
+      color: #d9f8ff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .terminal-line.command {
+      color: var(--green);
+    }
+
+    .topology {
+      padding: 24px;
+    }
+
+    .network-map {
+      position: relative;
+      min-height: 280px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(39, 215, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(39, 215, 255, 0.06) 1px, transparent 1px),
+        rgba(6, 12, 21, 0.56);
+      background-size: 34px 34px;
+    }
+
+    .device {
+      position: absolute;
+      display: grid;
+      min-width: 112px;
+      min-height: 76px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16, 34, 58, 0.92);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 900;
+      text-align: center;
+      transition: border-color 0.28s ease, box-shadow 0.28s ease, transform 0.28s var(--smooth);
+    }
+
+    .device small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .device.active {
+      border-color: rgba(39, 215, 255, 0.62);
+      box-shadow: 0 0 28px rgba(39, 215, 255, 0.18);
+      transform: translateY(-3px);
+    }
+
+    .router {
+      top: 104px;
+      left: calc(50% - 56px);
+    }
+
+    .internet {
+      top: 28px;
+      left: 28px;
+    }
+
+    .client {
+      right: 28px;
+      bottom: 28px;
+    }
+
+    .line {
+      position: absolute;
+      display: block;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(39, 215, 255, 0.82), rgba(39, 215, 255, 0.08));
+      transform-origin: left;
+      opacity: 0.25;
+      transition: opacity 0.28s ease;
+    }
+
+    .line.active {
+      opacity: 1;
+    }
+
+    .line-wan {
+      top: 99px;
+      left: 120px;
+      width: calc(50% - 164px);
+      transform: rotate(21deg);
+    }
+
+    .line-lan {
+      right: 120px;
+      bottom: 96px;
+      width: calc(50% - 160px);
+      transform: rotate(22deg);
+    }
+
+    .config-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .config-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 14px;
+      transition: border-color 0.28s ease, background 0.28s ease;
+    }
+
+    .config-item.active {
+      border-color: rgba(56, 247, 167, 0.5);
+      background: rgba(56, 247, 167, 0.08);
+    }
+
+    .config-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .config-item strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .hidden-line {
+      visibility: hidden;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.55s var(--smooth) both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .sim-body {
+        grid-template-columns: 1fr;
+      }
+
+      .intro {
+        min-height: auto;
+      }
+
+      .terminal {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 28px, 1120px);
+        padding-top: 24px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 34px;
+      }
+
+      .intro,
+      .terminal,
+      .topology {
+        padding: 22px;
+      }
+
+      .network-map {
+        min-height: 360px;
+      }
+
+      .device {
+        min-width: 104px;
+      }
+
+      .router {
+        top: 136px;
+        left: calc(50% - 52px);
+      }
+
+      .internet {
+        top: 28px;
+        left: calc(50% - 52px);
+      }
+
+      .client {
+        right: calc(50% - 52px);
+        bottom: 28px;
+      }
+
+      .line-wan,
+      .line-lan {
+        display: none;
+      }
+
+      .config-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="brand" href="index.html">Ilham Prayoga</a>
+      <a class="back-link" href="index.html#project">Kembali ke Project</a>
+    </header>
+
+    <section class="hero">
+      <div class="intro">
+        <div>
+          <p class="eyebrow">Simulasi Project 03</p>
+          <h1>Konfigurasi MikroTik Dasar</h1>
+          <p class="intro-text">
+            Simulasi ini menggambarkan proses konfigurasi RouterOS dasar untuk
+            membuat jaringan LAN, DHCP, NAT internet, dan pengujian koneksi.
+          </p>
+          <button class="start-button" type="button">Mulai Simulasi</button>
+        </div>
+
+        <div class="step-list" aria-label="Langkah simulasi MikroTik">
+          <article class="step-card active">
+            <span class="step-number">01</span>
+            <div>
+              <h2>Atur IP LAN</h2>
+              <p>Menambahkan alamat gateway pada interface bridge-LAN.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <span class="step-number">02</span>
+            <div>
+              <h2>Aktifkan DHCP</h2>
+              <p>Membagikan IP otomatis untuk perangkat client di jaringan lokal.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <span class="step-number">03</span>
+            <div>
+              <h2>Tambahkan NAT</h2>
+              <p>Mengaktifkan masquerade supaya client dapat mengakses internet.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <span class="step-number">04</span>
+            <div>
+              <h2>Uji Ping</h2>
+              <p>Memastikan router dan client dapat terhubung dengan baik.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="router-simulator">
+        <div class="sim-header">
+          <div class="window-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span class="sim-status">ROUTEROS DEMO</span>
+        </div>
+
+        <div class="sim-body">
+          <div class="terminal">
+            <p class="terminal-title">RouterOS Terminal</p>
+            <div class="terminal-line command" data-line="0">/ip address add address=192.168.10.1/24 interface=bridge-LAN</div>
+            <div class="terminal-line" data-line="1">address added: 192.168.10.1/24</div>
+            <div class="terminal-line command" data-line="2">/ip dhcp-server setup interface=bridge-LAN</div>
+            <div class="terminal-line" data-line="3">dhcp pool: 192.168.10.10-192.168.10.100</div>
+            <div class="terminal-line command" data-line="4">/ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade</div>
+            <div class="terminal-line" data-line="5">nat rule active: masquerade</div>
+            <div class="terminal-line command" data-line="6">/ping 8.8.8.8 count=3</div>
+            <div class="terminal-line" data-line="7">sent=3 received=3 packet-loss=0%</div>
+          </div>
+
+          <div class="topology">
+            <p class="topology-title">Topologi</p>
+            <div class="network-map">
+              <span class="line line-wan"></span>
+              <span class="line line-lan"></span>
+              <div class="device internet">Internet<small>ether1</small></div>
+              <div class="device router">MikroTik<small>RouterOS</small></div>
+              <div class="device client">Client<small>DHCP</small></div>
+            </div>
+
+            <div class="config-panel">
+              <div class="config-item" data-config="ip">
+                <span>Gateway</span>
+                <strong>192.168.10.1/24</strong>
+              </div>
+              <div class="config-item" data-config="dhcp">
+                <span>DHCP Pool</span>
+                <strong>192.168.10.10-100</strong>
+              </div>
+              <div class="config-item" data-config="nat">
+                <span>NAT</span>
+                <strong>masquerade</strong>
+              </div>
+              <div class="config-item" data-config="ping">
+                <span>Ping Test</span>
+                <strong>0% packet loss</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const button = document.querySelector(".start-button");
+    const steps = document.querySelectorAll(".step-card");
+    const lines = document.querySelectorAll(".terminal-line");
+    const devices = document.querySelectorAll(".device");
+    const links = document.querySelectorAll(".line");
+    const configs = document.querySelectorAll(".config-item");
+    let timers = [];
+
+    const resetSimulation = () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers = [];
+      lines.forEach((line) => {
+        line.style.visibility = "hidden";
+        line.classList.remove("fade-in");
+      });
+      steps.forEach((step, index) => step.classList.toggle("active", index === 0));
+      devices.forEach((device) => device.classList.remove("active"));
+      links.forEach((line) => line.classList.remove("active"));
+      configs.forEach((config) => config.classList.remove("active"));
+    };
+
+    const showLine = (index, delay) => {
+      timers.push(setTimeout(() => {
+        const line = lines[index];
+        line.style.visibility = "visible";
+        line.classList.add("fade-in");
+      }, delay));
+    };
+
+    const setStep = (index, delay) => {
+      timers.push(setTimeout(() => {
+        steps.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === index));
+      }, delay));
+    };
+
+    const activateConfig = (selector, delay) => {
+      timers.push(setTimeout(() => {
+        document.querySelector(selector).classList.add("active");
+      }, delay));
+    };
+
+    const activateNetwork = (delay) => {
+      timers.push(setTimeout(() => {
+        devices.forEach((device) => device.classList.add("active"));
+        links.forEach((line) => line.classList.add("active"));
+      }, delay));
+    };
+
+    const runSimulation = () => {
+      resetSimulation();
+      showLine(0, 150);
+      showLine(1, 700);
+      activateConfig('[data-config="ip"]', 850);
+      setStep(1, 1300);
+      showLine(2, 1450);
+      showLine(3, 1950);
+      activateConfig('[data-config="dhcp"]', 2100);
+      setStep(2, 2600);
+      showLine(4, 2750);
+      showLine(5, 3350);
+      activateConfig('[data-config="nat"]', 3500);
+      setStep(3, 4050);
+      showLine(6, 4200);
+      showLine(7, 4750);
+      activateConfig('[data-config="ping"]', 4900);
+      activateNetwork(5050);
+    };
+
+    resetSimulation();
+    button.addEventListener("click", runSimulation);
+    window.addEventListener("load", () => {
+      timers.push(setTimeout(runSimulation, 450));
+    });
+  </script>
+</body>
+</html>
